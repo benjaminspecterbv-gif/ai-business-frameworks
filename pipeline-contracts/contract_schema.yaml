@@ -1,0 +1,80 @@
+# Example verification contract -- the shape every autonomous pipeline must
+# declare before it is allowed to write to the repository/production system.
+#
+# Fill in a copy of this file per pipeline (e.g. contracts/<pipeline-name>.yaml).
+# validator.py checks a pipeline RUN's provenance manifest against the rules
+# declared here, and refuses the run if the contract is missing or the
+# manifest is internally incoherent (e.g. a paid model run that claims
+# cost_usd == 0.00).
+
+pipeline: example-content-pipeline
+declared: 2026-01-01
+owner: operator-is-the-publish-gate     # a human approves every write; the
+                                         # pipeline itself never commits/publishes
+
+# What this pipeline produces.
+artifact:
+  glob: "output/*.json"
+  producer: "generator_v2.py"
+  commits: "NONE -- this pipeline never commits or publishes on its own. A
+    human reads the diff and the oracle output, then commits."
+
+# Required fields on every run's provenance manifest, plus coherence rules
+# that catch a forged or incoherent manifest rather than a merely-missing one.
+provenance:
+  required_fields:
+    - producer
+    - producer_version
+    - model
+    - api_request_ids
+    - input_tokens
+    - output_tokens
+    - cost_usd
+    - wall_ms
+    - source_inputs
+    - fallbacks_fired
+    - generated_at
+  coherence_rules:
+    - "output_tokens == 0 AND artifact is non-trivial => impossible => reject as forged"
+    - "fallbacks_fired non-empty => DEGRADED, never PASS"
+    - "api_request_ids empty AND model != 'template' => forged => reject"
+    - "cost_usd == 0.00 AND model != 'template' => forged => reject"
+
+# Independent oracles: each must state its independence basis. An oracle
+# built from the same spec/template/author as the producer does not count.
+oracles:
+  - name: schema_check
+    independence: "validates structure only; shares no prompt or module with
+      the generator."
+  - name: independent_reviewer
+    independence: "a separate reviewer (different model or different prompt,
+      never the generating agent) sees only the finished artifact, not how
+      it was produced."
+
+# Canary fixtures the gate must never mis-verdict. See fixtures/ in this
+# directory for the actual files referenced below.
+canary:
+  fixture_dir: "fixtures/"
+  must_reject:
+    - name: bad_run.json
+      why: "cost_usd is 0.00 on a non-template model -- a forged manifest."
+  must_pass:
+    - name: good_run.json
+      why: "a coherent, real run -- must survive validation."
+
+# Liveness: how long this pipeline may go quiet before it is treated as dead.
+liveness:
+  max_days_without_verified_real_artifact: 7
+  severity: Sev-1
+  meaning: "7 days with no artifact that passed every oracle means the
+    pipeline is declared dead and escalated to a human, first item in the
+    next report."
+
+# Degrade behaviour -- "substitute silently" is never a legal value.
+degrade:
+  conditions:
+    - condition: "producer returns no result"
+      action: "HALT. Raise, do not silently fall back to a template."
+    - condition: "a fallback path fires"
+      action: "mark the run DEGRADED and block publish; never report PASS."
+  illegal: "substitute silently; commit; publish without a human review."

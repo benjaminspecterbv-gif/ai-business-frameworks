@@ -1,0 +1,14 @@
+{
+  "producer": "generator_v2.py",
+  "producer_version": "2.3.1",
+  "model": "claude-sonnet-5",
+  "api_request_ids": ["req_1111aa"],
+  "input_tokens": 1200,
+  "output_tokens": 0,
+  "cost_usd": 0.0412,
+  "wall_ms": 3400,
+  "source_inputs": ["spec_sheet_v3.pdf"],
+  "fallbacks_fired": [],
+  "generated_at": "2026-01-02T10:00:00Z",
+  "artifact_size_bytes": 4096
+}

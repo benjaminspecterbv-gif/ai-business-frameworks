@@ -1,0 +1,6 @@
+{
+  "producer": "generator_v2.py",
+  "model": "claude-sonnet-5",
+  "cost_usd": 0.02,
+  "generated_at": "2026-01-02T10:00:00Z"
+}
