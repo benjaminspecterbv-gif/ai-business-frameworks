@@ -43,7 +43,3 @@ tracking reality. These three patterns are the guardrails that came out of
 hitting that failure mode for real, generalized so they apply to any
 AI-generated artifact, not just the specific business they were built for.
 
-## Built with
-
-Claude Code, MCP integrations (filesystem, browser automation, external
-APIs), Python.
